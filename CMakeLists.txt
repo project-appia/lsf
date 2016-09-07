@@ -8,8 +8,8 @@ set(SRC_LIST
 
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
-if(WIN32)
 include_directories("./lib/include")
+if(WIN32)
 link_directories("C:/git/lsf/lib/mingw491_32")
 endif()
 
