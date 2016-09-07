@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <set>
 
-#include "data.pb.h"
-
 class dispatcher
 {
  public:
@@ -53,4 +51,4 @@ class dispatcher
     }
 };
 
-#endif // DISPATHCER_HPP
+#endif // DISPATCHER_HPP

@@ -2,17 +2,19 @@
 
 Module::Module(const std::string &p_id, dispatcher *dsp) :
     id(p_id),
-    context(1),
-    pub(context,ZMQ_PUB),
-    sub(context,ZMQ_SUB),
     ntick(0)
 {
+    pub = nn_socket(AF_SP,NN_PUB);
+    sub = nn_socket(AF_SP,NN_SUB);
+
+    std::cout << "Module: " << p_id << " pub: " << pub << " sub: " << sub << std::endl;
+
     for (const auto &x : dsp->mdlMap[id].out)
     {
         if ( x != std::string())
         {
             out.push_back(x);
-            pub.bind(dsp->getDataPubAddr(x));
+            nn_bind(pub,dsp->getDataPubAddr(x).c_str());
         }
     }
 
@@ -21,28 +23,26 @@ Module::Module(const std::string &p_id, dispatcher *dsp) :
         if ( x != std::string())
         {
             inp.push_back(x);
-            sub.connect(dsp->getDataSubAddr(x));
-            sub.setsockopt(ZMQ_SUBSCRIBE,x.c_str(), 1);
+            nn_setsockopt(sub, NN_SUB, NN_SUB_SUBSCRIBE, x.c_str(),0);
+            nn_connect(sub,dsp->getDataSubAddr(x).c_str());
         }
     }
 }
 
 Module::~Module()
 {
-
+    nn_shutdown(pub,0);
+    nn_shutdown(sub,0);
 }
 
 int Module::input()
 {
     for (const auto &x : inp)
     {
-        std::string address = s_recv(sub);
-        std::string content = s_recv(sub);
-
-        if (content != std::string())
-            std::cout << "[" << id << "]" << " received " << address << " " << content << std::endl;
-        else
-            std::cout << "[" << id << "]" << " missed data" << std::endl;
+        char *buf = nullptr;
+        int  bytes = nn_recv(sub, &buf, NN_MSG, 0);
+        std::cout << "Module " << id << " receiving  " << buf << std::endl;
+        nn_freemsg(buf);
     }
 }
 
@@ -55,26 +55,11 @@ int Module::tick(int n)
 
 int Module::output()
 {
-   for (const auto &x : out)
-   {
-     /*  if (ntick > 10 && x == "data1") // simulates a malfunction after 10 ticks
-           return 0;*/
-
-       std::string content = "message " + std::to_string(ntick);
-       std::cout << "[" << id << "]" << " published " << x << " " << content << std::endl;
-       s_sendmore(pub,x);
-       s_send(pub,content);
-   }
-
-
-  /* test::A2B message;
-   message.set_src("A");
-   message.set_dst("B");
-   message.set_name("A2B");
-   message.set_id(1);
-   message.set_content("message from A to B");*/
-
-   /*s_sendmore(pub, "data1");
-   s_send(pub,"message" + id);*/
+    for (const auto &x : out)
+    {
+        int sz_x = x.length() +1;
+        std::cout << "Module " << id << " publishing " << x << std::endl;
+        int bytes = nn_send (pub, x.c_str(), sz_x, 0);
+    }
 }
 
