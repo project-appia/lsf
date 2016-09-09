@@ -1,2 +1,2 @@
-# lsf
+# LSF
 Light Simulation Framework

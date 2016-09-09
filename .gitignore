@@ -31,3 +31,4 @@
 # Other
 *.user
 build/*
+bin/*
